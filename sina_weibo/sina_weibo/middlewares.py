@@ -77,7 +77,7 @@ class MySelenium_PhantomJS_Middleware(object):
         driver.find_element_by_id("loginAction").click()
         print("正在登录")
         time.sleep(2)
-        offset = 105
+        offset = 1
         flag = [1,]
         body_list = []
         while len(flag) == 1:

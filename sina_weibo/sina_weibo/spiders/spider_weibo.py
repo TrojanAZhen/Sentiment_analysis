@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import json
+import re
 from sina_weibo.items import SinaWeiboItem
+from scrapy.http import HtmlResponse
 
 
 class SpiderWeiboSpider(scrapy.Spider):
@@ -10,13 +12,29 @@ class SpiderWeiboSpider(scrapy.Spider):
     start_urls = ['https://passport.weibo.cn/signin/login']
 
     def parse(self, response):
+        #第一种方法，使用json数据
+        content_select = re.compile(r'&lt;.*?&gt;')
         response_list = json.loads(response.text)
+        #循环多少页
         for item_list in response_list:
+            redis_item = {}
+            #循环每个页面内容
             for item_card_group in range(len(item_list[0]['card_group'])):
-                result = item_list[0]['card_group'][item_card_group]['mblog']['text']
-                print(result)
-        # with open("weibo.html","w") as file:
-        #     file.write(response.text)
+                item = SinaWeiboItem()
+                try:
+                    item['nick_name'] = item_list[0]['card_group'][item_card_group]['mblog']['user']['screen_name']
+                    content_result = item_list[0]['card_group'][item_card_group]['mblog']['text']
+                    item['weibo_content'] = content_select.sub("",content_result)
+                    item['weibo_device'] = item_list[0]['card_group'][item_card_group]['mblog']['source']
+                    item['weibo_time'] = item_list[0]['card_group'][item_card_group]['mblog']['created_at']
+                    item['weibo_forward'] = str(item_list[0]['card_group'][item_card_group]['mblog']['reposts_count'])
+                    item['weibo_yes'] = str(item_list[0]['card_group'][item_card_group]['mblog']['attitudes_count'])
+                    redis_item['item']=item
+                    yield redis_item
+                except:
+                    pass
+
+        #第二种方法，页面解析
         # weibo_select = response.xpath('//div[@class="card-main"]')
         # for item in weibo_select:
         #     item_weibo = SinaWeiboItem()
@@ -47,5 +65,4 @@ class SpiderWeiboSpider(scrapy.Spider):
 
             #将数据提交给管道
             # yield item_weibo
-
 

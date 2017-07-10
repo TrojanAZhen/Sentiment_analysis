@@ -8,23 +8,23 @@ import redis
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 
+#写入json文件
 class SinaWeiboPipeline(object):
     def __init__(self):
-        self.file = open('weibo.json','w')
+        self.file = open('weibo.json','a')
 
     def process_item(self, item, spider):
-        content = json.dumps(dict(item),ensure_ascii=False)+",\n"
-        self.file.write(content)
+        self.file.write(str(item.get('item'))+",\n")
         return item
 
     def close_spider(self,spider):
         self.file.close()
 
+#写入redis数据库
 class SinaWeibo_redis_Pipeline(object):
     def open_spider(self,spider):
         self.redis_cli = redis.Redis(host = "127.0.0.1",port = 6379)
 
     def process_item(self,item,spider):
-        content = json.dumps(dict(item),ensure_ascii=False)
-        self.redis_cli.lpush("sina_weibo",content)
+        self.redis_cli.lpush("sina_weibo",str(item.get('item')))
         return item
